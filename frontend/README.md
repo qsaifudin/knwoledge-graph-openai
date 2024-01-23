@@ -1,5 +1,11 @@
-# Nuxt 3 Minimal Starter
+# Frontend Knowledge Graph App
+## Author
 
+- **Saifudin**
+  - Email: qsaifudin.official@gmail.com
+  - LinkedIn: [https://www.linkedin.com/in/qsaifudin/](https://www.linkedin.com/in/qsaifudin/)
+  - Personal Web: [https://qsaifudin.site/](https://qsaifudin.site/)
+  
 Look at the [Nuxt 3 documentation](https://nuxt.com/docs/getting-started/introduction) to learn more.
 
 ## Setup
