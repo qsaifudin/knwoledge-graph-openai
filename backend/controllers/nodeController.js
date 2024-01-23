@@ -7,6 +7,10 @@ const PASSWORD = "1UOfVjDrHsJhwauUPmTyCKYK0gb1L9NzTEb4qCnHPAM";
 
 const driver = neo4j.driver(URI, neo4j.auth.basic(USER, PASSWORD));
 const session = driver.session();
+require('dotenv').config()
+
+const PORT = process.env.PORT
+const BASE_URL = `http://localhost:${PORT}`
 
 // Controller functions for node operations
 exports.createNode = async (req, res) => {
@@ -26,11 +30,7 @@ exports.createNodeFromQuery = async (req, res) => {
   let concatQuery;
   let dataStore;
   try {
-    const response = await axios.post("http://localhost:3000/api/query", {
-      query: req.body.query,
-    });
-
-    let content = response.data.response.content;
+    let content = req.body.query;
     // let escapedString = content
     let escapedString = content.replace(/'/g, "\\'");
 
@@ -38,99 +38,116 @@ exports.createNodeFromQuery = async (req, res) => {
       "Translate the following information into a Cypher query for a Neo4j graph database: ";
     concatQuery = introQuery + escapedString;
     const responseCypherQuery = await axios.post(
-      "http://localhost:3000/api/query",
+      `${BASE_URL}/api/query`,
       {
         query: concatQuery,
       }
     );
 
-    dataStore = responseCypherQuery.data.response.content;
+    dataStore = responseCypherQuery.data.data;
     const result = await session.run(dataStore);
     // res.json(responseCypherQuery.data);
-    res.json({ introQuery, dataStore });
+    res.json({ success: true, data: { concatQuery:concatQuery, dataStore:dataStore } });
   } catch (error) {
-    res
-      .status(500)
-      .json({
-        error: error.message,
-        concatQuery: concatQuery,
-        dataStore: dataStore,
-      });
+    res.status(500).json({
+      error: error.message,
+      concatQuery: concatQuery,
+      dataStore: dataStore,
+    });
+  }
+};
+exports.createNodeFromQueryfuLL = async (req, res) => {
+  let concatQuery;
+  let dataStore;
+  try {
+    const response = await axios.post(`${BASE_URL}/api/query`, {
+      query: req.body.query,
+    });
+
+    let content = response.data.data;
+    // let escapedString = content
+    let escapedString = content.replace(/'/g, "\\'");
+
+    introQuery =
+      "Translate the following information into a Cypher query for a Neo4j graph database: ";
+    concatQuery = introQuery + escapedString;
+    const responseCypherQuery = await axios.post(
+      `${BASE_URL}/api/query`,
+      {
+        query: concatQuery,
+      }
+    );
+
+    dataStore = responseCypherQuery.data.data;
+    const result = await session.run(dataStore);
+    // res.json(responseCypherQuery.data);
+    res.json({ success: true, data: { concatQuery:concatQuery, dataStore:dataStore } });
+  } catch (error) {
+    res.status(500).json({
+      error: error.message,
+      concatQuery: concatQuery,
+      dataStore: dataStore,
+    });
   }
 };
 
-function formatResponsetoGraph(input) {
-  const nodes = [];
-  const edges = [];
-
-  input.records.forEach((record) => {
-    const node = record._fields[0];
-    const relationship = record._fields[1];
-    const targetNode = record._fields[2];
-
-    if (node) {
-      const nodeKey = `${node.identity.low}.${node.identity.high}`;
-      const nodeAttributes = {
-        label: node.labels[0],
-        name: node.properties.name,
-        // Add more properties as needed
-      };
-      nodes.push({
-        key: nodeKey,
-        attributes: nodeAttributes,
-      });
-    }
-
-    if (relationship) {
-      const edgeKey = `${relationship.identity.low}.${relationship.identity.high}`;
-      const sourceNodeKey = `${node.identity.low}.${node.identity.high}`;
-      const targetNodeKey = `${targetNode.identity.low}.${targetNode.identity.high}`;
-      const edgeAttributes = {
-        size: 1, // Add more properties as needed
-      };
-      edges.push({
-        key: edgeKey,
-        source: sourceNodeKey,
-        target: targetNodeKey,
-        attributes: edgeAttributes,
-      });
-    }
-  });
-
-  return {
-    nodes,
-    edges,
+function convertData(inputData) {
+  const result = {
+    nodes: {},
+    edges: {},
   };
-}
 
-function formatResponse(input) {
-  const nodes = {};
-  const edges = {};
+  inputData.forEach((data) => {
+    const nodeElements = data._fields.filter(
+      (field) =>
+        field &&
+        field.labels &&
+        (field.labels.includes("Tree") ||
+          field.labels.includes("Squirrel") ||
+          field.labels.includes("Forest"))
+    );
 
-  input.records.forEach((record) => {
-    const node = record._fields[0];
-    const relationship = record._fields[1];
-    const targetNode = record._fields[2];
+    data._fields.forEach((field, index) => {
+      if (field && field.identity && field.labels) {
+        const nodeId = `node${field.identity.low}`;
+        const nodeName =
+          field.properties && field.properties.name
+            ? field.properties.name
+            : `N${field.identity.low}`;
 
-    if (node) {
-      const nodeId = `node${node.identity.low}`;
-      nodes[nodeId] = { name: node.properties.name, labels: node.labels };
-    }
+        if (!result.nodes[nodeId]) {
+          result.nodes[nodeId] = { name: nodeName };
+        }
+      }
+    });
 
-    if (relationship) {
-      const edgeId = `edge${relationship.identity.low}`;
-      const sourceNodeId = `node${node.identity.low}`;
-      const targetNodeId = `node${targetNode.identity.low}`;
-      edges[edgeId] = {
-        source: sourceNodeId,
-        target: targetNodeId,
-        type: relationship.type,
-        properties: relationship.properties,
-      };
+    for (let i = 1; i < data._fields.length; i++) {
+      const field = data._fields[i];
+
+      if (
+        field &&
+        field.startNodeElementId &&
+        field.endNodeElementId &&
+        field.type
+      ) {
+        const sourceId = `node${field.startNodeElementId.split(":").pop()}`;
+        const targetId = `node${field.endNodeElementId.split(":").pop()}`;
+        const edgeLabel = field.type;
+
+        const edgeId = `edge${field.startNodeElementId}:${field.endNodeElementId}:${field.type}`;
+
+        if (!result.edges[edgeId]) {
+          result.edges[edgeId] = {
+            source: sourceId,
+            target: targetId,
+            label: edgeLabel,
+          };
+        }
+      }
     }
   });
 
-  return { nodes, edges };
+  return result;
 }
 
 exports.getAllNodes = async (req, res) => {
@@ -139,10 +156,10 @@ exports.getAllNodes = async (req, res) => {
     OPTIONAL MATCH (n)-[r]->(m)
     RETURN n, r, m`);
     // let nodes = result.records.map(record => record.get('n').properties);
-    let nodes = formatResponsetoGraph(result);
-    let  = formatResponse(result);
-    // res.json(result);
-    res.json(nodes);
+    // let nodes = convertResponse(result);
+    let nodes = convertData(result.records);
+    // let nodes = result;
+    res.json({ success: true, data: nodes });
   } catch (error) {
     console.log("🚀 ~ exports.getAllNodes= ~ error:", error);
     res.status(500).json({ error: error.message });

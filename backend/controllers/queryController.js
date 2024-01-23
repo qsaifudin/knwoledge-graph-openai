@@ -15,7 +15,8 @@ exports.prosessQuery = async (req, res) => {
     const result = await client.getChatCompletions(deploymentId, messages);
     //   return result.choices[0].message;
 
-    res.json({ response: result.choices[0].message });
+    let messageQuery = result.choices[0].message.content
+    res.json({ success: true, data: messageQuery });
   } catch (error) {
     console.error("Error processing the query:", error);
     res.status(500).json({ error: "Internal Server Error" });
