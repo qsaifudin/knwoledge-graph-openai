@@ -7,7 +7,7 @@
   - LinkedIn: [https://www.linkedin.com/in/qsaifudin/](https://www.linkedin.com/in/qsaifudin/)
   - Personal Web: [https://qsaifudin.site/](https://qsaifudin.site/)
 
-Welcome to the Backend Knowledge Graph App! This application serves as the backend for a knowledge graph. Below are the setup instructions and system requirements to get you started.
+
 
 ## System Requirements
 Ensure that your system meets the following requirements:
@@ -21,15 +21,8 @@ Ensure that your system meets the following requirements:
 1. Install dependencies using npm:
    ```bash
    npm install
-2. Configure your environment variables:
-- Create a .env file in the root directory.
-- Add the following environment variables with your specific values:
-   ```bash
-   AZURE_OPENAI_ENDPOINT=https://dana-automation-hiring-temp.openai.azure.com/
-   AZURE_OPENAI_KEY=b0e73c18d58e46d1b02c3eb533d7dc26
-   PORT=5000
    ```
-   or you can just copy the .env-example file 
+2. Copy the `.env-example` file to create a `.env` 
 
 
 ## Usage
