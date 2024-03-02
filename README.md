@@ -2,6 +2,10 @@
 
 The Knowledge Graph App is designed to provide information based on user queries and visualize the data in the form of a knowledge graph.
 
+GitHub Repo : https://github.com/qsaifudin/knwoledge-graph-openai.git
+
+Video Demo : https://youtu.be/cNWrqlrbXac
+
 ## Design Overview
 
 ### User Interaction Flow:
