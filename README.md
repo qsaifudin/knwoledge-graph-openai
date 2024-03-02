@@ -173,7 +173,6 @@ The Knowledge Graph App is designed to provide information based on user queries
 
 - neo4j+s
 
-
 ### Frontend
 
 - Framework: Nuxt3
